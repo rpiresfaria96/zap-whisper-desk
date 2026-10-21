@@ -32,4 +32,4 @@ Este repositório reúne a interface do Ideal Zap, o adaptador HTTP local para W
 
 ## Inicialização
 
-Execute `PREPARAR_AMBIENTE.bat` uma vez. Depois, normalmente basta executar `INICIAR_TUDO.bat`. As três janelas de terminal abertas precisam permanecer ativas.
+Execute `PREPARAR_AMBIENTE.bat` uma vez. Depois, normalmente basta executar `INICIAR_TUDO.bat`. O iniciador aguarda até 120 segundos o endpoint de saúde do WPPConnect antes de abrir o adaptador e a interface. As três janelas de terminal abertas precisam permanecer ativas.
