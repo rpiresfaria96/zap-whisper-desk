@@ -151,7 +151,7 @@ function normalizeMessage(raw, chatId) {
   const ack = Number(raw?.ack ?? raw?.ackStatus);
   let status = raw?.status;
   if (!["sending", "sent", "delivered", "read"].includes(status)) {
-    status = ack >= 3 ? "read" : ack >= 2 ? "delivered" : ack >= 1 ? "sent" : "sending";
+    status = ack >= 3 ? "read" : ack >= 2 ? "delivered" : "sent";
   }
   return {
     id,
@@ -292,7 +292,7 @@ const server = createServer(async (req, res) => {
       const heartbeat = setInterval(() => {
         try { res.write(": keepalive\n\n"); } catch {}
       }, 20000);
-      req.on("close", () => {
+      res.on("close", () => {
         clearInterval(heartbeat);
         eventClients.delete(res);
       });
