@@ -17,7 +17,7 @@ A interface usa dados fictícios por padrão. Para conversar usando uma sessão 
 3. Copie o arquivo raiz `.env.example` para `.env`. Ele deve conter `VITE_API_URL=http://127.0.0.1:3001`.
 4. Copie `backend/.env.example` para `backend/.env`.
 5. Edite `backend/.env` e preencha:
-   - `WPP_BASE_URL`: endereço do seu WPPConnect Server, normalmente `http://127.0.0.1:21465`.
+   - `WPP_BASE_URL`: endereço do seu WPPConnect Server, neste computador, `http://127.0.0.1:8787`.
    - `WPP_SESSION`: nome exato da sessão.
    - `WPP_TOKEN`: token Bearer gerado para essa sessão, sem publicar ou compartilhar esse valor.
 6. Execute `npm run api` em um terminal.
