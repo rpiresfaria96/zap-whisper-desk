@@ -1,60 +1,35 @@
-# Zap Whisper Desk — Ideal Zap
+# Ideal Zap — ambiente local integrado
 
-Interface local de mensagens em React, TypeScript e Tailwind CSS. O projeto foi criado no Lovable e está conectado a este repositório.
+Este repositório reúne a interface do Ideal Zap, o adaptador HTTP local para WPPConnect Server e scripts que baixam o WPPConnect oficial dentro desta mesma pasta. O WPPConnect permanece em uma subpasta ignorada pelo Git para não misturar os códigos-fonte dos dois projetos.
 
-A interface usa dados fictícios por padrão. Para conversar usando uma sessão real do WPPConnect Server, há um adaptador Node.js local que mantém o token fora do navegador.
+## Preparação em uma pasta
 
-## Requisitos
+1. Baixe este repositório em **Code → Download ZIP** e extraia-o para uma pasta de trabalho.
+2. Execute `PREPARAR_AMBIENTE.bat`.
+3. O preparador baixa uma cópia portátil do Node.js v22.22.2, verifica o SHA-256 do arquivo, baixa o WPPConnect Server oficial v2.10.61, adiciona o pacote estático oficial WPPConnect Manager v2.0.0 com verificação SHA-256, gera uma `SECRET_KEY` forte e instala as dependências da interface e do servidor. Não precisa instalar o Node globalmente.
+4. Execute `INICIAR_TUDO.bat`.
+5. Abra o Manager em `http://127.0.0.1:8787/manager/`. Use a `SECRET_KEY` de `wppconnect-server/.env` para acesso administrativo; crie/inicie a sessão `Ideal` e leia o QR Code com seu celular.
+6. Depois que a sessão estiver conectada, gere/consulte o token dessa sessão pelo Manager e copie-o para `backend/.env`:
+   - `WPP_SESSION=Ideal`
+   - `WPP_TOKEN=` seguido do token completo da sessão.
+7. Salve `backend/.env` e reinicie somente a janela **Ideal Zap - API local**. Abra/atualize a interface em `http://127.0.0.1:8080/`.
 
-- Node.js 20 ou superior.
-- WPPConnect Server funcionando, com a sessão já conectada ao WhatsApp.
-- Token Bearer válido da sessão do WPPConnect.
+## Endereços locais
 
-## Configuração inicial (Windows)
+- WPPConnect Server: `http://127.0.0.1:8787`
+- WPPConnect Manager: `http://127.0.0.1:8787/manager/`
+- Adaptador local (mantém o token fora do navegador): `http://127.0.0.1:3001`
+- Interface Ideal Zap: `http://127.0.0.1:8080`
 
-1. Baixe/clone este repositório no computador em que vai rodar a interface.
-2. Na pasta raiz, execute `npm install`.
-3. Copie o arquivo raiz `.env.example` para `.env`. Ele deve conter `VITE_API_URL=http://127.0.0.1:3001`.
-4. Copie `backend/.env.example` para `backend/.env`.
-5. Edite `backend/.env` e preencha:
-   - `WPP_BASE_URL`: endereço do seu WPPConnect Server, neste computador, `http://127.0.0.1:8787`.
-   - `WPP_SESSION`: nome exato da sessão.
-   - `WPP_TOKEN`: token Bearer gerado para essa sessão, sem publicar ou compartilhar esse valor.
-6. Execute `npm run api` em um terminal.
-7. Em outro terminal, execute `npm run dev`.
-8. Abra a URL indicada pelo Vite (normalmente `http://localhost:5173`).
+## Notas
 
-Como alternativa, depois de criar os dois arquivos `.env`, execute `INICIAR_LOCAL.bat` para abrir o backend, a interface e o navegador em janelas separadas.
+- Os dados do servidor ficam em `wppconnect-server/userDataDir`; não apague essa pasta depois de vincular o telefone.
+- As configurações e credenciais ficam em arquivos `.env`, que não devem ser enviados ao GitHub.
+- Se a pasta `wppconnect-server` já existir com outra versão, o preparador a renomeia para `wppconnect-server.backup-DATA-HORA`, em vez de apagá-la.
+- O código do backend e da interface é desenvolvido no projeto principal. O código baixado do WPPConnect fica separado em `wppconnect-server`, dentro do mesmo diretório de trabalho.
+- O WPPConnect Server oficial v2.10.61 especifica Node.js v22.22.2. O preparador usa essa versão portátil no projeto sem substituir o Node que já esteja instalado no Windows.
+- Não use o Manager e a interface personalizada para criar várias sessões concorrentes com o mesmo diretório de perfil. Use a sessão `Ideal` e valide a conexão antes de testar envio de mensagens.
 
-## Verificação
+## Inicialização
 
-- Abra `http://127.0.0.1:3001/health`: mostra se o adaptador encontrou a configuração (nunca exibe o token).
-- Abra `http://127.0.0.1:3001/status`: consulta o estado da sessão no WPPConnect.
-- A interface deve carregar as conversas reais quando o adaptador estiver configurado. Se o token, a sessão ou a rota da API estiverem incorretos, confira a mensagem no terminal da janela “Ideal Zap - API local”.
-
-## O que a primeira integração suporta
-
-- Listar conversas.
-- Ler as últimas mensagens de uma conversa.
-- Enviar mensagens de texto.
-- Atualizar mensagens recebidas por SSE, consultando o endpoint de novas mensagens do WPPConnect.
-
-Ainda não foram integrados anexos, envio de áudio, chamadas, edição de mensagens ou uma tela para iniciar/vincular sessão por QR Code. A sessão do WhatsApp precisa estar autenticada no WPPConnect antes do uso.
-
-## Segurança
-
-- O adaptador escuta apenas em `127.0.0.1`, não fica disponível para outros computadores da rede.
-- O token deve ficar apenas em `backend/.env`. Nunca o coloque em uma variável `VITE_*`, nem envie esse arquivo para o GitHub.
-- As rotas e os formatos do WPPConnect Server podem mudar entre versões. Teste leitura e envio primeiro com uma conversa de teste.
-
-## Desenvolvimento
-
-```bash
-npm run dev
-npm run api
-npm run build
-npm run lint
-npm test
-```
-
-O código do projeto sincroniza com o editor do Lovable conectado a este repositório.
+Execute `PREPARAR_AMBIENTE.bat` uma vez. Depois, normalmente basta executar `INICIAR_TUDO.bat`. As três janelas de terminal abertas precisam permanecer ativas.
