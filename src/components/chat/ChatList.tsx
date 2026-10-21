@@ -9,7 +9,7 @@ import { IconButton } from "./IconButton";
 interface Props {
   title: string;
   chats: Chat[];
-  selectedId?: string;
+  selectedId?: string | undefined;
   onSelect: (id: string) => void;
 }
 

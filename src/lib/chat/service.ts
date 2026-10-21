@@ -57,5 +57,5 @@ export function createHttpChatService(baseUrl: string): ChatService {
   };
 }
 
-const apiUrl = import.meta.env.VITE_API_URL as string | undefined;
+const apiUrl = import.meta.env["VITE_API_URL"] as string | undefined;
 export const chatService: ChatService = apiUrl ? createHttpChatService(apiUrl) : createMockChatService();

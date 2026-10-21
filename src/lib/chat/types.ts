@@ -4,9 +4,9 @@ export interface Contact {
   id: string;
   name: string;
   phone: string;
-  avatarUrl?: string;
-  about?: string;
-  online?: boolean;
+  avatarUrl?: string | undefined;
+  about?: string | undefined;
+  online?: boolean | undefined;
 }
 
 export interface Message {
@@ -15,16 +15,16 @@ export interface Message {
   fromMe: boolean;
   body: string;
   timestamp: number;
-  status?: MessageStatus;
+  status?: MessageStatus | undefined;
 }
 
 export interface Chat {
   id: string;
   contact: Contact;
-  lastMessage?: Message;
+  lastMessage?: Message | undefined;
   unreadCount: number;
-  pinned?: boolean;
-  favorite?: boolean;
+  pinned?: boolean | undefined;
+  favorite?: boolean | undefined;
 }
 
 /**
