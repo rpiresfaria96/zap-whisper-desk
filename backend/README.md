@@ -11,7 +11,7 @@ Este backend mantém o token do WPPConnect fora do navegador. Ele é um adaptado
 ## Configuração
 
 1. Copie `.env.example` para `.env`, dentro desta pasta `backend`.
-2. Configure `WPP_BASE_URL`, `WPP_SESSION` e `WPP_TOKEN`.
+2. Configure `WPP_BASE_URL=http://127.0.0.1:8787`, `WPP_SESSION` e `WPP_TOKEN`.
 3. Na pasta raiz, crie um arquivo `.env` baseado em `.env.example` com `VITE_API_URL=http://127.0.0.1:3001`.
 4. Na raiz do projeto, execute `npm run api` para iniciar o adaptador e `npm run dev` em outro terminal para iniciar a interface.
 
