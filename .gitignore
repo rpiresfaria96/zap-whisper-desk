@@ -36,3 +36,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Locally downloaded WPPConnect server and project-local Node runtime
+/wppconnect-server/
+/wppconnect-server.backup-*/
+/runtime/
+/_cache/
