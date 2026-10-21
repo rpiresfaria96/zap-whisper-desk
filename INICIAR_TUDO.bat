@@ -28,10 +28,18 @@ if not exist "node_modules" (
 
 echo Iniciando os tres componentes a partir desta pasta...
 start "WPPConnect Server - 8787" /D "%SERVER_DIR%" cmd /k "set PATH=%NODE_DIR%;%PATH%&& set COREPACK_HOME=%COREPACK_HOME%&& set PORT=8787&& yarn.cmd dev"
-timeout /t 3 >nul
+echo Aguardando o WPPConnect responder em http://127.0.0.1:8787/healthz ...
+for /L %%i in (1,1,60) do (
+  curl.exe -fsS "http://127.0.0.1:8787/healthz" >nul 2>&1 && goto WPP_READY
+  timeout /t 2 >nul
+)
+echo.
+echo O WPPConnect ainda nao respondeu. Confira a janela "WPPConnect Server - 8787".
+echo Vou abrir a interface mesmo assim para permitir o diagnostico.
+:WPP_READY
 start "Ideal Zap - API local - 3001" /D "%ROOT%" cmd /k ""%NODE_DIR%\node.exe" backend\server.mjs"
-start "Ideal Zap - Interface - 8080" /D "%ROOT%" cmd /k "set PATH=%NODE_DIR%;%PATH%&& npm.cmd run dev -- --host 127.0.0.1 --port 8080"
-timeout /t 5 >nul
+start "Ideal Zap - Interface - 8080" /D "%ROOT%" cmd /k "set "PATH=%NODE_DIR%;%PATH%"&& npm.cmd run dev -- --host 127.0.0.1 --port 8080"
+timeout /t 7 >nul
 start "" "http://127.0.0.1:8787/manager/"
 start "" "http://127.0.0.1:8080/"
 
