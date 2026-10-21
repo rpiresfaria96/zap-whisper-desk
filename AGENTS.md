@@ -8,3 +8,7 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+## Architecture
+- UI reads/writes chats only through `ChatService` (src/lib/chat); mock by default, HTTP+SSE to a local Node backend when VITE_API_URL is set — keeps WPPConnect tokens server-side and UI unchanged.
+- No Supabase/cloud: the app must run fully locally.
