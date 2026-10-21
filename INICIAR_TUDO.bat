@@ -38,7 +38,7 @@ echo O WPPConnect ainda nao respondeu. Confira a janela "WPPConnect Server - 878
 echo Vou abrir a interface mesmo assim para permitir o diagnostico.
 :WPP_READY
 start "Ideal Zap - API local - 3001" /D "%ROOT%" cmd /k ""%NODE_DIR%\node.exe" backend\server.mjs"
-start "Ideal Zap - Interface - 8080" /D "%ROOT%" cmd /k "set "PATH=%NODE_DIR%;%PATH%"&& npm.cmd run dev -- --host 127.0.0.1 --port 8080"
+start "Ideal Zap - Interface - 8080" /D "%ROOT%" cmd /k "set PATH=%NODE_DIR%;%PATH%&& npm.cmd run dev -- --host 127.0.0.1 --port 8080"
 timeout /t 7 >nul
 start "" "http://127.0.0.1:8787/manager/"
 start "" "http://127.0.0.1:8080/"
