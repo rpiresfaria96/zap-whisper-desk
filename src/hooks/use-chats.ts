@@ -13,7 +13,10 @@ export function useChats() {
   }, []);
 
   const pushMessage = useCallback((m: Message) => {
-    setMessages((all) => (all[m.chatId] ? { ...all, [m.chatId]: [...all[m.chatId], m] } : all));
+    setMessages((all) => {
+      const cur = all[m.chatId];
+      return cur ? { ...all, [m.chatId]: [...cur, m] } : all;
+    });
     setChats((cs) => cs.map((c) => (c.id === m.chatId ? { ...c, lastMessage: m } : c)));
   }, []);
 
