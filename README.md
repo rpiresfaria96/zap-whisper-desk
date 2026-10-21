@@ -12,7 +12,7 @@ A interface usa dados fictícios por padrão. Para conversar usando uma sessão 
 
 ## Configuração inicial (Windows)
 
-1. Baixe/clon​e este repositório no computador em que vai rodar a interface.
+1. Baixe/clone este repositório no computador em que vai rodar a interface.
 2. Na pasta raiz, execute `npm install`.
 3. Copie o arquivo raiz `.env.example` para `.env`. Ele deve conter `VITE_API_URL=http://127.0.0.1:3001`.
 4. Copie `backend/.env.example` para `backend/.env`.
