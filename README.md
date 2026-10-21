@@ -1,48 +1,60 @@
-# Zap Whisper Desk
+# Zap Whisper Desk — Ideal Zap
 
-Crie uma aplicação desktop web chamada Ideal Zap, com interface moderna, elegante e profissional, inspirada em aplicativos de mensagens, mas com identidade igual ao whatsapp web.
+Interface local de mensagens em React, TypeScript e Tailwind CSS. O projeto foi criado no Lovable e está conectado a este repositório.
 
-Layout principal:
+A interface usa dados fictícios por padrão. Para conversar usando uma sessão real do WPPConnect Server, há um adaptador Node.js local que mantém o token fora do navegador.
 
-Menu lateral estreito com ícones para conversas, contatos, favoritos e configurações.
+## Requisitos
 
-Coluna de conversas com foto, nome, última mensagem, horário, contador de mensagens não lidas e pesquisa.
+- Node.js 20 ou superior.
+- WPPConnect Server funcionando, com a sessão já conectada ao WhatsApp.
+- Token Bearer válido da sessão do WPPConnect.
 
-Área central com histórico de mensagens em balões, separando mensagens enviadas e recebidas.
+## Configuração inicial (Windows)
 
-Cabeçalho com nome, foto e telefone do contato.
+1. Baixe/clon​e este repositório no computador em que vai rodar a interface.
+2. Na pasta raiz, execute `npm install`.
+3. Copie o arquivo raiz `.env.example` para `.env`. Ele deve conter `VITE_API_URL=http://127.0.0.1:3001`.
+4. Copie `backend/.env.example` para `backend/.env`.
+5. Edite `backend/.env` e preencha:
+   - `WPP_BASE_URL`: endereço do seu WPPConnect Server, normalmente `http://127.0.0.1:21465`.
+   - `WPP_SESSION`: nome exato da sessão.
+   - `WPP_TOKEN`: token Bearer gerado para essa sessão, sem publicar ou compartilhar esse valor.
+6. Execute `npm run api` em um terminal.
+7. Em outro terminal, execute `npm run dev`.
+8. Abra a URL indicada pelo Vite (normalmente `http://localhost:5173`).
 
-Campo de digitação na parte inferior, com botões para anexos, emojis, enviar e gravar áudio.
+Como alternativa, depois de criar os dois arquivos `.env`, execute `INICIAR_LOCAL.bat` para abrir o backend, a interface e o navegador em janelas separadas.
 
-Tema claro e escuro.
+## Verificação
 
-Design responsivo, animações discretas, ícones consistentes, tipografia moderna e bom espaçamento.
+- Abra `http://127.0.0.1:3001/health`: mostra se o adaptador encontrou a configuração (nunca exibe o token).
+- Abra `http://127.0.0.1:3001/status`: consulta o estado da sessão no WPPConnect.
+- A interface deve carregar as conversas reais quando o adaptador estiver configurado. Se o token, a sessão ou a rota da API estiverem incorretos, confira a mensagem no terminal da janela “Ideal Zap - API local”.
 
-Use React, TypeScript e Tailwind CSS. Quero uma aparência refinada, não um painel administrativo genérico.
+## O que a primeira integração suporta
 
-Inicialmente, utilize conversas e mensagens fictícias para demonstrar o visual. Organize o código em componentes reutilizáveis.
+- Listar conversas.
+- Ler as últimas mensagens de uma conversa.
+- Enviar mensagens de texto.
+- Atualizar mensagens recebidas por SSE, consultando o endpoint de novas mensagens do WPPConnect.
 
-Integração futura: a aplicação deverá conversar com um backend Node.js local que se conectará ao WPPConnect Server. Não coloque tokens, chaves secretas ou credenciais da API no código do navegador. Não crie uma integração com Supabase nem dependa de serviços em nuvem para o funcionamento local.
+Ainda não foram integrados anexos, envio de áudio, chamadas, edição de mensagens ou uma tela para iniciar/vincular sessão por QR Code. A sessão do WhatsApp precisa estar autenticada no WPPConnect antes do uso.
 
-Priorize a qualidade visual e a facilidade de personalização. Deixe a interface preparada para posteriormente conectar conversas, histórico, envio de mensagens e atualização em tempo real à API.
+## Segurança
 
-This project was built with [Lovable](https://lovable.dev).
+- O adaptador escuta apenas em `127.0.0.1`, não fica disponível para outros computadores da rede.
+- O token deve ficar apenas em `backend/.env`. Nunca o coloque em uma variável `VITE_*`, nem envie esse arquivo para o GitHub.
+- As rotas e os formatos do WPPConnect Server podem mudar entre versões. Teste leitura e envio primeiro com uma conversa de teste.
 
-## Build with Lovable
+## Desenvolvimento
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/9e6866a5-44f3-52eb-b660-26022999a1a5).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
-
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+```bash
 npm run dev
+npm run api
+npm run build
+npm run lint
+npm test
 ```
+
+O código do projeto sincroniza com o editor do Lovable conectado a este repositório.
