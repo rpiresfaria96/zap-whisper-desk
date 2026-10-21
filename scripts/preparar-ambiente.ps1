@@ -79,6 +79,7 @@ if (Test-Path $serverPackage) {
     }
   } catch {}
 }
+$serverWasInstalled = $installServer
 if ($installServer) {
   if (Test-Path $ServerDir) {
     $backup = Join-Path $Root ("wppconnect-server.backup-" + (Get-Date -Format "yyyyMMdd-HHmmss"))
@@ -163,6 +164,11 @@ if (-not (Test-Path $backendEnv)) {
   Copy-Item $backendExample $backendEnv
 }
 Set-EnvValue $backendEnv "WPP_BASE_URL" "http://127.0.0.1:8787"
+if ($serverWasInstalled) {
+  # Tokens from the previous server secret cannot be reused after a clean server install.
+  Set-EnvValue $backendEnv "WPP_SESSION" "Ideal"
+  Set-EnvValue $backendEnv "WPP_TOKEN" ""
+}
 Set-EnvValue $backendEnv "API_PORT" "3001"
 Set-EnvValue $backendEnv "CORS_ORIGINS" "http://localhost:8080,http://127.0.0.1:8080,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000"
 
