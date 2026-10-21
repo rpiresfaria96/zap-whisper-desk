@@ -327,7 +327,7 @@ const server = createServer(async (req, res) => {
       if (!messageText) return json(res, 400, { error: "Digite uma mensagem antes de enviar." });
       const isGroup = chatId.endsWith("@g.us");
       const isLid = chatId.endsWith("@lid");
-      const phone = chatId.split("@")[0];
+      const phone = chatId; // preserve @c.us/@g.us/@lid identifiers returned by WPPConnect
       await callWpp(sessionPath("send-message"), {
         method: "POST",
         body: { phone: [phone], isGroup, isNewsletter: false, isLid, message: messageText },
