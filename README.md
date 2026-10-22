@@ -10,7 +10,7 @@ Este repositório reúne a interface do Ideal Zap, o adaptador HTTP local para W
 4. Execute **INICIAR_TUDO.bat**.
 5. A interface abre em http://127.0.0.1:8080/. Não precisa entrar no Manager, cadastrar senha ou fazer login em uma tela administrativa.
 6. Execute **CONECTAR_WHATSAPP.bat**. O programa configura automaticamente a sessão **Ideal Contabilidade**, gera o token interno sem exibi-lo e abre o QR Code para vincular o celular.
-7. No celular que ficará conectado, abra **WhatsApp → Dispositivos conectados → Conectar dispositivo** e leia o QR Code. Depois atualize a interface.
+7. No celular que ficará conectado, abra **WhatsApp → Dispositivos conectados → Conectar dispositivo** e leia o QR Code. Depois feche a janela antiga **Ideal Zap - API local - 3001**, execute **INICIAR_API.bat** e atualize a interface.
 
 ## Endereços locais
 
@@ -31,4 +31,4 @@ Este repositório reúne a interface do Ideal Zap, o adaptador HTTP local para W
 
 ## Inicialização habitual
 
-Depois da primeira preparação, normalmente basta executar **INICIAR_TUDO.bat**. Para vincular/revincular, execute **CONECTAR_WHATSAPP.bat**.
+Depois da primeira preparação, normalmente basta executar **INICIAR_TUDO.bat**. Para vincular/revincular, execute **CONECTAR_WHATSAPP.bat**. Depois reinicie a API com **INICIAR_API.bat**.
