@@ -16,6 +16,14 @@ $ManagerVersion = "2.0.0"
 New-Item -ItemType Directory -Force -Path $RuntimeParent, $CacheDir, $CorepackHome, $NpmCache, $YarnCache | Out-Null
 $env:COREPACK_HOME = $CorepackHome
 $env:npm_config_cache = $NpmCache
+# Remove inherited legacy environment keys which Yarn 4 interprets as unsupported settings.
+# In this environment, YARN_DIR is reported by Yarn as the invalid config "dir".
+foreach ($legacyName in @("YARN_DIR", "YARN_COMMAND", "npm_config_dir", "NPM_CONFIG_DIR")) {
+  if (Test-Path "Env:$legacyName") {
+    Write-Host "Removendo configuração herdada incompatível: $legacyName"
+    Remove-Item "Env:$legacyName" -ErrorAction SilentlyContinue
+  }
+}
 $env:YARN_CACHE_FOLDER = $YarnCache
 
 function Set-EnvValue([string]$Path, [string]$Name, [string]$Value) {
