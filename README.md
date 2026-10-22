@@ -20,7 +20,7 @@ Este repositório reúne a interface do Ideal Zap, o adaptador HTTP local para W
 
 ## Observações importantes
 
-- O ID técnico da sessão é **Ideal_Contabilidade** (sem espaço para compatibilidade com rotas); nos textos e instruções, o nome é **Ideal Contabilidade**.
+- O nome da sessão é **Ideal Contabilidade**. O script codifica espaços nas URLs automaticamente.
 - A porta **8788** evita confundir este projeto com instalações antigas do WPPConnect que possam estar na 8787.
 - Não é necessário informar a chave interna nem entrar no Manager. Ela é gerada automaticamente e usada somente pelo script.
 - Para vincular a conta do WhatsApp pela primeira vez, ainda é necessário ler o QR Code uma vez no celular. Isso é exigência da vinculação de dispositivos do WhatsApp, não uma senha do Ideal Zap.
