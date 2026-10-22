@@ -181,6 +181,31 @@ try {
   if (Test-Path $corepack) {
     & $corepack prepare yarn@4.14.1 --activate
     if ($LASTEXITCODE -ne 0) { throw "Não foi possível preparar o Yarn 4.14.1." }
+
+    # Corepack may cache yarn.js inside this ESM project. Without a local package
+    # scope, Node inherits the root package.json "type": "module" and Yarn throws
+    # "Dynamic require of util is not supported". Force the downloaded Yarn CLI
+    # to be interpreted as CommonJS; this does not change app/server package types.
+    $yarnVersionDir = Join-Path $CorepackHome "v1\yarn\4.14.1"
+    $yarnJs = Join-Path $yarnVersionDir "yarn.js"
+    if (Test-Path $yarnJs) {
+      $yarnScope = Join-Path $yarnVersionDir "package.json"
+      if (Test-Path $yarnScope) {
+        try {
+          $yarnPackage = Get-Content $yarnScope -Raw | ConvertFrom-Json
+          $yarnPackage | Add-Member -NotePropertyName type -NotePropertyValue "commonjs" -Force
+          $yarnPackage | ConvertTo-Json -Depth 10 | Set-Content -Path $yarnScope -Encoding UTF8
+        } catch {
+          Set-Content -Path $yarnScope -Value '{"type":"commonjs"}' -Encoding ASCII
+        }
+      } else {
+        Set-Content -Path $yarnScope -Value '{"type":"commonjs"}' -Encoding ASCII
+      }
+      Write-Host "Ajuste de compatibilidade do Yarn aplicado." -ForegroundColor Green
+    } else {
+      throw "O arquivo do Yarn não foi encontrado em $yarnJs após a preparação."
+    }
+
     & $corepack yarn install --immutable
     if ($LASTEXITCODE -ne 0) { throw "A instalação das dependências do WPPConnect falhou." }
   } else {
