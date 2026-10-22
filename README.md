@@ -9,9 +9,9 @@ Este repositório reúne a interface do Ideal Zap, o adaptador HTTP local para W
 3. O preparador baixa uma cópia portátil do Node.js v22.22.2, verifica o SHA-256 do arquivo, baixa o WPPConnect Server oficial v2.10.61, adiciona o pacote estático oficial WPPConnect Manager v2.0.0 com verificação SHA-256, gera uma `SECRET_KEY` forte e instala as dependências da interface e do servidor. Não precisa instalar o Node globalmente.
 4. Execute `INICIAR_TUDO.bat`.
 5. Abra o Manager em `http://127.0.0.1:8787/manager/`. Use a `SECRET_KEY` de `wppconnect-server/.env` para acesso administrativo; crie/inicie a sessão `Ideal` e leia o QR Code com seu celular.
-6. Depois que a sessão estiver conectada, gere/consulte o token dessa sessão pelo Manager e copie-o para `backend/.env`:
+6. Depois, execute `CONECTAR_WHATSAPP.bat`: ele gera o token da sessão e abre o QR Code automaticamente. O campo `token` (hash) vai para `backend/.env`; não use `full`, pois esse campo inclui também o nome da sessão:
    - `WPP_SESSION=Ideal`
-   - `WPP_TOKEN=` seguido do token completo da sessão.
+   - `WPP_TOKEN=` recebe apenas o valor de `token` retornado por `generate-token` (não o campo `full`).
 7. Salve `backend/.env` e reinicie somente a janela **Ideal Zap - API local**. Abra/atualize a interface em `http://127.0.0.1:8080/`.
 
 ## Endereços locais
