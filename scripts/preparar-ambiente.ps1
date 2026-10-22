@@ -228,8 +228,11 @@ if (-not (Test-Path (Join-Path $Root "package.json"))) {
 Push-Location $Root
 try {
   $npm = Join-Path $NodeDir "npm.cmd"
-  & $npm install --no-package-lock
-  if ($LASTEXITCODE -ne 0) { throw "A instalação das dependências da interface falhou." }
+  # npm 10 (included with Node 22) has a known Arborist "edgesOut" crash
+  # with certain optional peer-dependency graphs. legacy-peer-deps avoids
+  # that broken peer resolution path; the repository already uses bun.lock.
+  & $npm install --no-package-lock --legacy-peer-deps --no-audit --no-fund
+  if ($LASTEXITCODE -ne 0) { throw "A instalação das dependências da interface falhou. Consulte a saída do npm." }
 } finally { Pop-Location }
 
 Write-Host ""
