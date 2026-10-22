@@ -7,7 +7,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 loadEnv(join(here, ".env"));
 
 const PORT = Number(process.env.API_PORT || 3001);
-const WPP_BASE_URL = (process.env.WPP_BASE_URL || "http://127.0.0.1:8787").replace(/\/+$/, "");
+const WPP_BASE_URL = (process.env.WPP_BASE_URL || "http://127.0.0.1:8788").replace(/\/+$/, "");
 const WPP_SESSION = process.env.WPP_SESSION || "";
 const WPP_TOKEN = process.env.WPP_TOKEN || "";
 const allowedOrigins = (process.env.CORS_ORIGINS || "http://localhost:8080,http://127.0.0.1:8080,http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000")
