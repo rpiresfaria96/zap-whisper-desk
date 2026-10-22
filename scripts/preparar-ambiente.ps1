@@ -174,7 +174,7 @@ if (-not (Test-Path $backendEnv)) {
 Set-EnvValue $backendEnv "WPP_BASE_URL" "http://127.0.0.1:8788"
 if ($serverWasInstalled) {
   # Tokens from the previous server secret cannot be reused after a clean server install.
-  Set-EnvValue $backendEnv "WPP_SESSION" "Ideal_Contabilidade"
+  Set-EnvValue $backendEnv "WPP_SESSION" "Ideal Contabilidade"
   Set-EnvValue $backendEnv "WPP_TOKEN" ""
 }
 Set-EnvValue $backendEnv "API_PORT" "3001"
