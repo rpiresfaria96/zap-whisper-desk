@@ -8,7 +8,7 @@ $BackendEnv = Join-Path $Root "backend\.env"
 $BaseUrl = "http://127.0.0.1:8788"
 
 # ID tecnico sem espacos; nome exibido ao usuario: Ideal Contabilidade.
-$Session = "Ideal_Contabilidade"
+$Session = "Ideal Contabilidade"
 $SessionUrl = [System.Uri]::EscapeDataString($Session)
 $SessionLabel = "Ideal Contabilidade"
 
