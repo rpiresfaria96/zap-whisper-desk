@@ -151,5 +151,6 @@ if ($Connected) {
   Write-Host "A conexão não foi confirmada. Se o QR expirou, execute CONECTAR_WHATSAPP.bat novamente." -ForegroundColor Yellow
 }
 Remove-Item $QrPath -Force -ErrorAction SilentlyContinue
-Write-Host "Configuração salva em backend\.env. Se a API local já estava aberta, reinicie a janela 'Ideal Zap - API local - 3001'."
+Write-Host "Configuração salva em backend\.env."
+Write-Host "Feche a janela antiga 'Ideal Zap - API local - 3001' e execute INICIAR_API.bat para carregar o token novo."
 Write-Host "Depois confira http://127.0.0.1:3001/chats e atualize http://127.0.0.1:8080/."
