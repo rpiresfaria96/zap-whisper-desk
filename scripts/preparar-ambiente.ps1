@@ -150,10 +150,10 @@ if (-not $secretMatch.Success -or [string]::IsNullOrWhiteSpace($secretMatch.Grou
   $secret = ([System.BitConverter]::ToString($secretBytes)).Replace("-", "").ToLowerInvariant()
   Set-EnvValue $wppEnv "SECRET_KEY" $secret
 }
-Set-EnvValue $wppEnv "PORT" "8787"
+Set-EnvValue $wppEnv "PORT" "8788"
 Set-EnvValue $wppEnv "HOST" "http://localhost"
 Set-EnvValue $wppEnv "MANAGER_ENABLED" "true"
-Write-Host "Configuração do WPPConnect ajustada para a porta 8787." -ForegroundColor Green
+Write-Host "Configuração do WPPConnect ajustada para a porta 8788." -ForegroundColor Green
 
 # 5. Set up Manager / frontend integration without overwriting any existing session token.
 $rootEnv = Join-Path $Root ".env"
@@ -171,10 +171,10 @@ if (-not (Test-Path $backendEnv)) {
   if (-not (Test-Path $backendExample)) { throw "Não encontrei backend\.env.example." }
   Copy-Item $backendExample $backendEnv
 }
-Set-EnvValue $backendEnv "WPP_BASE_URL" "http://127.0.0.1:8787"
+Set-EnvValue $backendEnv "WPP_BASE_URL" "http://127.0.0.1:8788"
 if ($serverWasInstalled) {
   # Tokens from the previous server secret cannot be reused after a clean server install.
-  Set-EnvValue $backendEnv "WPP_SESSION" "Ideal"
+  Set-EnvValue $backendEnv "WPP_SESSION" "Ideal_Contabilidade"
   Set-EnvValue $backendEnv "WPP_TOKEN" ""
 }
 Set-EnvValue $backendEnv "API_PORT" "3001"
@@ -243,5 +243,5 @@ Write-Host "  WPPConnect: $ServerDir"
 Write-Host "  Node local: $NodeDir"
 Write-Host ""
 Write-Host "Próximo passo: execute INICIAR_TUDO.bat."
-Write-Host "Na primeira conexão, abra o Manager, entre com a SECRET_KEY do arquivo wppconnect-server\.env e crie/vincule a sessão Ideal pelo QR Code."
-Write-Host "Depois copie o token da sessão para backend\.env (WPP_SESSION e WPP_TOKEN)."
+Write-Host "Execute CONECTAR_WHATSAPP.bat: ele configura a sessão Ideal Contabilidade e abre o QR Code sem pedir senha nem abrir o Manager."
+Write-Host "Não é necessário copiar token nem editar arquivos .env manualmente."
