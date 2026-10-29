@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import type { Chat, Message } from "@/lib/chat/types";
 import { chatService } from "@/lib/chat/service";
 import { formatListDate } from "@/lib/chat/format";
+import { sortChatsByActivity } from "@/lib/chat/ordering";
 import { ContactAvatar } from "./ContactAvatar";
 import { IconButton } from "./IconButton";
 
@@ -47,7 +48,7 @@ export function ChatList({ title, chats, selectedId, onSelect, onNewChat, onRefr
       .filter((c) => !s || c.contact.name.toLowerCase().includes(s) ||
         c.contact.phone.includes(s) || c.lastMessage?.body?.toLowerCase().includes(s))
       .filter((c) => (filter === "Não lidas" ? c.unreadCount > 0 : filter === "Favoritas" ? c.favorite : true))
-      .sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned) || (b.lastMessage?.timestamp ?? 0) - (a.lastMessage?.timestamp ?? 0));
+      .sort(title === "Contatos" ? (a, b) => a.contact.name.localeCompare(b.contact.name) : sortChatsByActivity);
   }, [chats, q, filter]);
 
   return (

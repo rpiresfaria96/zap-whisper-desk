@@ -35,6 +35,8 @@ export interface Chat {
   id: string;
   contact: Contact;
   lastMessage?: Message | undefined;
+  /** Last activity from WhatsApp chat metadata, even without a message preview. */
+  activityAt?: number | undefined;
   unreadCount: number;
   pinned?: boolean | undefined;
   favorite?: boolean | undefined;

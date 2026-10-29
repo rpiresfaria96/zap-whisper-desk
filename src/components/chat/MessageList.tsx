@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef } from "react";
 import { Lock } from "lucide-react";
 import type { Message } from "@/lib/chat/types";
 import { formatDayLabel } from "@/lib/chat/format";
@@ -18,8 +18,9 @@ function reportMountedHistory(hasMessages: boolean) {
 }
 
 export function MessageList({ messages, onReply, onReact, onForward, onEdit, onDelete, onStar, onOpenContact,
-  searchTerm = "", selectedMatchId }: {
+  searchTerm = "", selectedMatchId, chatId }: {
   messages: Message[];
+  chatId?: string | undefined;
   onReply?: ((message: Message) => void) | undefined;
   onReact?: ((message: Message, emoji: string) => void) | undefined;
   onForward?: ((message: Message) => void) | undefined;
@@ -31,13 +32,41 @@ export function MessageList({ messages, onReply, onReact, onForward, onEdit, onD
   selectedMatchId?: string | undefined;
 }) {
   const scroller = useRef<HTMLDivElement>(null);
+  const content = useRef<HTMLDivElement>(null);
+  const followBottom = useRef(true);
+  const openedChat = useRef<string | undefined>(undefined);
+  const currentSearch = useRef(searchTerm);
+  currentSearch.current = searchTerm;
+
+  // On chat change always show newest messages, even when both chats have
+  // exactly 80 messages. Otherwise follow only if the reader was near bottom.
+  useLayoutEffect(() => {
+    const node = scroller.current;
+    if (!node) return;
+    if (openedChat.current !== chatId) {
+      openedChat.current = chatId;
+      followBottom.current = true;
+    }
+    if (!searchTerm.trim() && followBottom.current) node.scrollTop = node.scrollHeight;
+  }, [chatId, messages, searchTerm]);
+
+  // Media previews/images can grow after the first render. Only follow their
+  // height changes if the reader did not intentionally scroll up.
   useEffect(() => {
-    // Rolagem dentro da conversa, nunca da pagina inteira. No SSR/jsdom
-    // scrollIntoView nao existe e provocava falhas em alguns ambientes.
-    const element = scroller.current;
-    if (element && !searchTerm.trim()) element.scrollTop = element.scrollHeight;
+    const element = content.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => {
+      if (followBottom.current && !currentSearch.current.trim() && scroller.current) {
+        scroller.current.scrollTop = scroller.current.scrollHeight;
+      }
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     if (messages.length) reportMountedHistory(true);
-  }, [messages.length]);
+  }, [chatId, messages.length]);
 
   useEffect(() => {
     if (!searchTerm.trim() || !selectedMatchId || !scroller.current) return;
@@ -49,7 +78,11 @@ export function MessageList({ messages, onReply, onReact, onForward, onEdit, onD
   }, [searchTerm, selectedMatchId]);
 
   return (
-    <div ref={scroller} className="scroll-thin chat-wallpaper flex-1 overflow-y-auto py-4">
+    <div ref={scroller} onScroll={(event) => {
+      const element = event.currentTarget;
+      followBottom.current = element.scrollHeight - element.clientHeight - element.scrollTop < 120;
+    }} className="scroll-thin chat-wallpaper flex-1 min-h-0 overflow-y-auto py-4">
+      <div ref={content}>
       <div className="mx-auto mb-3 flex w-fit max-w-md items-center gap-2 rounded-lg bg-panel-header px-3 py-1.5 text-center text-xs text-muted-foreground shadow-sm">
         <Lock className="h-3 w-3 shrink-0" /> As mensagens são protegidas com a criptografia de ponta a ponta.
       </div>
@@ -74,7 +107,7 @@ export function MessageList({ messages, onReply, onReact, onForward, onEdit, onD
           </Fragment>
         );
       })}
-
+      </div>
     </div>
   );
 }

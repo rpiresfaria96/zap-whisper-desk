@@ -3,6 +3,9 @@ import type { Message } from "@/lib/chat/types";
 
 const NOTIFY_PREF = "ideal-zap-desktop-notifications";
 const SOUND_PREF = "ideal-zap-incoming-sound";
+const insecureLanOrigin = () => typeof window !== "undefined" &&
+  window.isSecureContext === false &&
+  !["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname);
 const readPref = (key: string, fallback: boolean) => {
   if (typeof window === "undefined") return fallback;
   try { const value = localStorage.getItem(key); return value === null ? fallback : value === "true"; } catch { return fallback; }
@@ -12,6 +15,7 @@ export function useIncomingAlerts() {
   const [desktopEnabled, setDesktopEnabled] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission | "unsupported">("default");
+  const [insecureOrigin, setInsecureOrigin] = useState(false);
   const desktopRef = useRef(false);
   const soundRef = useRef(false);
   const lastAlerted = useRef(new Map<string, number>());
@@ -23,6 +27,7 @@ export function useIncomingAlerts() {
     setDesktopEnabled(desktop); desktopRef.current = desktop;
     setSoundEnabled(sound); soundRef.current = sound;
     setPermission("Notification" in window ? Notification.permission : "unsupported");
+    setInsecureOrigin(insecureLanOrigin());
   }, []);
 
   const playSound = useCallback(async () => {
@@ -75,7 +80,10 @@ export function useIncomingAlerts() {
       try { localStorage.setItem(NOTIFY_PREF, "false"); } catch {}
       return;
     }
-    if (typeof window === "undefined" || !("Notification" in window)) {
+    if (typeof window === "undefined" || insecureLanOrigin()) {
+      setInsecureOrigin(true); return;
+    }
+    if (!("Notification" in window)) {
       setPermission("unsupported"); return;
     }
     let next = Notification.permission;
@@ -118,5 +126,5 @@ export function useIncomingAlerts() {
     }
   }, [playSound]);
 
-  return { desktopEnabled, soundEnabled, permission, toggleDesktop, toggleSound, onIncoming };
+  return { desktopEnabled, soundEnabled, permission, insecureOrigin, toggleDesktop, toggleSound, onIncoming };
 }

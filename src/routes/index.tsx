@@ -222,7 +222,13 @@ function Index() {
                 aria-pressed={alerts.soundEnabled}>
                 {alerts.soundEnabled ? "✓ " : ""}Som ao receber mensagens: {alerts.soundEnabled ? "Ligado" : "Desligado"}
               </button>
-              {alerts.permission === "denied" && <p className="text-xs text-destructive">
+              {alerts.insecureOrigin && <p role="alert" className="text-xs text-destructive">
+                Neste computador o site está aberto por HTTP na rede local. Chrome e Edge exigem
+                HTTPS confiável para permitir notificações do Windows. Use o acesso HTTPS seguro
+                descrito em docs/NOTIFICACOES_REDE_LOCAL.md no computador servidor.
+                O som na aba continua disponível.
+              </p>}
+              {alerts.permission === "denied" && !alerts.insecureOrigin && <p className="text-xs text-destructive">
                 O navegador bloqueou notificações. Autorize notificações para este endereço nas configurações do navegador.
               </p>}
               {alerts.permission === "unsupported" && <p className="text-xs text-muted-foreground">
@@ -318,7 +324,7 @@ function Index() {
                     onClick={() => void refreshMessages(selectedChat.id)}>Atualizar mensagens</button>
                 </div>
               )}
-              <MessageList messages={messages} onReply={setQuoted} onReact={reactToMessage}
+              <MessageList key={selectedChat.id} chatId={selectedChat.id} messages={messages} onReply={setQuoted} onReact={reactToMessage}
                 onOpenContact={(phone) => {
                   void openNumber(phone).catch(() =>
                     setReactionError("Não foi possível abrir a conversa com o contato compartilhado."));

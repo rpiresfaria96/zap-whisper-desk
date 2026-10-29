@@ -70,3 +70,11 @@ dist-ssr
 *.p12
 *.sqlite*
 *.db
+
+/.local/
+/.idealzap-backups/
+/Atualizações/
+/CORRECOES/
+/ATUALIZAR_IDEALZAP.ps1
+/ATUALIZAR_IDEALZAP.bat
+/AtualizaÃ§Ãµes/

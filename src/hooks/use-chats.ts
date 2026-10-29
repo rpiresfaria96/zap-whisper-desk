@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { chatService } from "@/lib/chat/service";
 import type { Chat, Message } from "@/lib/chat/types";
+import { newestMessage } from "@/lib/chat/ordering";
 
 // Registra somente eventos tecnicos. Nunca envia o ID, telefone, nome ou conteudo.
 function traceHistory(event: "HISTORY_OPENED" | "HISTORY_DATA_READY" | "HISTORY_ERROR", status: string) {
@@ -93,13 +94,17 @@ export function useChats(onIncoming?: ((message: Message, isOpen: boolean, sende
   };
   const emitIncoming = (message: Message, isOpen: boolean) =>
     incomingCallback.current?.(message, isOpen, senderDisplay(message));
+  const chatPollSequence = useRef(0);
   const firstSnapshotLoaded = useRef(false);
   const unreadSnapshots = useRef(new Map<string, number>());
   const historyLastSeen = useRef(new Map<string, string>());
 
   const refreshChats = useCallback(async () => {
+    const requestId = ++chatPollSequence.current;
     try {
       const next = await chatService.listChats();
+      // An older overlapping request must never reorder newer conversations.
+      if (requestId !== chatPollSequence.current) return;
       rememberContactNames(next);
       // Reserva: alguns aparelhos não emitem eventos SSE consistentemente.
       // Detectar novas mensagens que a listagem realmente informa, sem
@@ -137,14 +142,15 @@ export function useChats(onIncoming?: ((message: Message, isOpen: boolean, sende
         const cached = new Map(previous.map((item) => [item.id, item]));
         return next.map((item) => {
           const previousItem = cached.get(item.id);
-          const lastMessage = item.lastMessage && item.lastMessage.body
-            ? item.lastMessage : previousItem?.lastMessage || item.lastMessage;
+          const lastMessage = newestMessage(previousItem?.lastMessage, item.lastMessage);
           const override = readOverrides.current.get(item.id);
           if (override && Date.now() - override.at > 3 * 60_000) readOverrides.current.delete(item.id);
           const effective = readOverrides.current.get(item.id);
           const pin = pinOverrides.current.get(item.id);
           if (pin && Date.now() - pin.at > 3 * 60_000) pinOverrides.current.delete(item.id);
           return { ...item, lastMessage,
+            activityAt: Math.max(item.activityAt || 0, previousItem?.activityAt || 0,
+              lastMessage?.timestamp || 0),
             pinned: pinOverrides.current.get(item.id)?.pinned ?? item.pinned,
             unreadCount: effective ? (effective.unread ? Math.max(1, item.unreadCount) : 0) : item.unreadCount,
             contact: { ...item.contact,
@@ -214,8 +220,9 @@ export function useChats(onIncoming?: ((message: Message, isOpen: boolean, sende
       const mostRecent = [...updated].reverse().find((msg) => Boolean(msg.body) || Boolean(msg.mediaType));
       if (mostRecent) {
         setChats((previous) => previous.map((chat) =>
-          chat.id === id && (!chat.lastMessage || chat.lastMessage.timestamp <= mostRecent.timestamp)
-            ? { ...chat, lastMessage: mostRecent } : chat));
+          chat.id === id ? { ...chat,
+            lastMessage: newestMessage(chat.lastMessage, mostRecent),
+            activityAt: Math.max(chat.activityAt || 0, mostRecent.timestamp) } : chat));
       }
       setHistoryLoaded((prev) => ({ ...prev, [id]: true }));
       if (selectedRef.current === id) {
@@ -235,16 +242,27 @@ export function useChats(onIncoming?: ((message: Message, isOpen: boolean, sende
 
   useEffect(() => {
     void refreshChats();
-    const timer = window.setInterval(() => {
-      void refreshChats();
+    // Fast chat-list refresh for remote clients; history is a separate less
+    // frequent request to avoid loading 80 messages every time.
+    const chatsTimer = window.setInterval(() => void refreshChats(), 7000);
+    const historyTimer = window.setInterval(() => {
       if (selectedRef.current) void refreshMessages(selectedRef.current, true);
-    }, 15000);
-    return () => window.clearInterval(timer);
+    }, 8000);
+    const onFocus = () => { void refreshChats();
+      if (selectedRef.current) void refreshMessages(selectedRef.current, true); };
+    window.addEventListener("focus", onFocus);
+    return () => {
+      window.clearInterval(chatsTimer);
+      window.clearInterval(historyTimer);
+      window.removeEventListener("focus", onFocus);
+    };
   }, [refreshChats, refreshMessages]);
 
   const pushMessage = useCallback((message: Message) => {
-    // Eventos SSE podem repetir após reconexão. Nunca tocar som de novo.
-    if (!realtimeSeen.current.has(message.id)) {
+    // Eventos SSE podem repetir após reconexão. Não aumentar contagem de
+    // não lidas nem tocar som duas vezes para o mesmo ID.
+    const newEvent = !realtimeSeen.current.has(message.id);
+    if (newEvent) {
       realtimeSeen.current.add(message.id);
       if (realtimeSeen.current.size > 1000)
         realtimeSeen.current.delete(realtimeSeen.current.values().next().value!);
@@ -255,7 +273,10 @@ export function useChats(onIncoming?: ((message: Message, isOpen: boolean, sende
       [message.chatId]: mergeMessages(all[message.chatId] ?? [], enrich(message.chatId, [message])),
     }));
     setChats((all) => all.map((chat) => chat.id === message.chatId
-      ? { ...chat, lastMessage: message, unreadCount: chat.id === selectedRef.current ? 0 : chat.unreadCount + 1 }
+      ? { ...chat, lastMessage: newestMessage(chat.lastMessage, message),
+          activityAt: Math.max(chat.activityAt || 0, message.timestamp),
+          unreadCount: chat.id === selectedRef.current ? 0 :
+            (message.fromMe || !newEvent ? chat.unreadCount : chat.unreadCount + 1) }
       : chat));
   }, [enrich]);
 

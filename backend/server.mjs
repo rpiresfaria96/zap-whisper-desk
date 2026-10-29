@@ -146,6 +146,16 @@ function epochMs(value) {
   return number < 1_000_000_000_000 ? number * 1000 : number;
 }
 
+// Chat rows may carry their latest activity in `t`, without `lastMessage`.
+// Unlike epochMs (used for messages), missing chat activity is never "now".
+function knownActivityMs(value) {
+  const parsed = typeof value === "string" && !/^\d+(\.\d+)?$/.test(value)
+    ? Date.parse(value) : Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 1_000_000_000) return 0;
+  const ms = parsed < 1_000_000_000_000 ? parsed * 1000 : parsed;
+  return ms <= Date.now() + 86_400_000 ? ms : 0;
+}
+
 function mediaKind(raw) {
   const type = String(raw?.type || "").toLowerCase();
   const mime = String(raw?.mimetype || raw?.mimeType || "").toLowerCase();
@@ -291,6 +301,10 @@ function normalizeChat(raw) {
     id,
     contact: { id, name, phone, ...(avatarUrl ? { avatarUrl } : {}), ...(isGroup ? { about: "Grupo" } : {}) },
     lastMessage: last && typeof last === "object" ? normalizeMessage(last, id) : undefined,
+    activityAt: Math.max(knownActivityMs(raw?.t), knownActivityMs(raw?.timestamp),
+      knownActivityMs(raw?.lastMessageTime), knownActivityMs(raw?.lastMsgTimestamp),
+      knownActivityMs(raw?.lastMessage?.timestamp), knownActivityMs(last?.t),
+      knownActivityMs(last?.timestamp)),
     archived: Boolean(raw?.archive ?? raw?.archived),
     unreadCount: Number.isFinite(unread) ? Math.max(0, unread) : 0,
     pinned: Boolean(raw?.pinned ?? raw?.pin),
@@ -342,26 +356,41 @@ let previewWorkerActive = false;
 
 async function preparePreviews(rawChats) {
   if (previewWorkerActive) return;
-  const eligible = rawChats.slice(0, PREVIEW_LIMIT).map((raw) => {
-    const normalized = normalizeChat(raw);
-    return normalized?.lastMessage?.body ? null : normalized?.id;
-  }).filter((id) => id && (!previewAttempted.has(id) ||
-    Date.now() - previewAttempted.get(id) > PREVIEW_TTL_MS));
+  // WPPConnect only supplies full previews for a small fraction of chat rows.
+  // Prioritize recent chats by metadata (`t`), not the source array order.
+  const eligible = rawChats.map(normalizeChat).filter(Boolean)
+    .sort((a, b) => (b.activityAt || b.lastMessage?.timestamp || 0) -
+                    (a.activityAt || a.lastMessage?.timestamp || 0))
+    .slice(0, PREVIEW_LIMIT)
+    .filter((chat) => {
+      const known = previewCache.get(chat.id)?.message;
+      const latest = known && known.timestamp >= (chat.lastMessage?.timestamp || 0)
+        ? known : chat.lastMessage;
+      const activity = chat.activityAt || 0;
+      // Refresh when WhatsApp indicates activity newer than our preview.
+      const stale = !latest || !latest.body || (activity > latest.timestamp + 1000);
+      if (!stale) return false;
+      const attemptAt = previewAttempted.get(chat.id) || 0;
+      return Date.now() - attemptAt >= 25_000;
+    })
+    .slice(0, 12).map((chat) => chat.id);
   if (!eligible.length) return;
   previewWorkerActive = true;
-  const tasks = [...new Set(eligible)];
   let cursor = 0;
   const work = async () => {
-    while (cursor < tasks.length) {
-      const id = tasks[cursor++];
+    while (cursor < eligible.length) {
+      const id = eligible[cursor++];
       previewAttempted.set(id, Date.now());
       try {
         const payload = await callWpp(sessionPath(
           `get-messages/${encodeURIComponent(id)}?count=1&direction=before`
         ), { timeoutMs: 12_000 });
         const messages = normalizeMessageList(payload, id);
-        const mostRecent = messages[messages.length - 1];
-        if (mostRecent) previewCache.set(id, { at: Date.now(), message: mostRecent });
+        const last = messages[messages.length - 1];
+        if (last && (!previewCache.has(id) ||
+            last.timestamp >= previewCache.get(id).message.timestamp)) {
+          previewCache.set(id, { at: Date.now(), message: last });
+        }
       } catch (error) {
         diagnostic("API", "PREVIEW_FETCH_FAILED", { kind: errorKind(error) });
       }
@@ -369,7 +398,7 @@ async function preparePreviews(rawChats) {
   };
   try {
     await Promise.all([work(), work()]);
-    diagnostic("API", "PREVIEW_PREFETCH_COMPLETED", { count: tasks.length });
+    diagnostic("API", "PREVIEW_PREFETCH_COMPLETED", { count: eligible.length });
   } finally {
     previewWorkerActive = false;
   }
@@ -435,6 +464,13 @@ async function loadAvatar(id) {
 const pnLidContactCache = new Map();
 const eventClients = new Set();
 const seenEvents = new Set();
+function rememberIncomingPreview(message) {
+  if (!message?.chatId || !message?.id) return;
+  const previous = previewCache.get(message.chatId)?.message;
+  if (!previous || message.timestamp >= previous.timestamp) {
+    previewCache.set(message.chatId, { at: Date.now(), message });
+  }
+}
 let pollingEvents = false;
 
 async function pollNewMessages() {
@@ -453,6 +489,7 @@ async function pollNewMessages() {
       if (!message.body && !raw?.type) continue;
       if (seenEvents.has(message.id)) continue;
       seenEvents.add(message.id);
+      rememberIncomingPreview(message);
       if (seenEvents.size > 1500) seenEvents.delete(seenEvents.values().next().value);
       const packet = `data: ${JSON.stringify(message)}\n\n`;
       for (const client of eventClients) {
@@ -680,6 +717,7 @@ const server = createServer(async (req, res) => {
             const message = normalizeMessage(raw, chatId);
             if (!seenEvents.has(message.id)) {
               seenEvents.add(message.id);
+              rememberIncomingPreview(message);
               if (seenEvents.size > 1500) seenEvents.delete(seenEvents.values().next().value);
               const packet = `data: ${JSON.stringify(message)}\n\n`;
               for (const client of eventClients) {
@@ -873,8 +911,13 @@ const server = createServer(async (req, res) => {
       const chats = rawChats.map(normalizeChat).filter(Boolean).map((item) => {
         const saved = previewCache.get(item.id);
         const cached = saved && Date.now() - saved.at < PREVIEW_TTL_MS ? saved.message : null;
-        return cached && (!item.lastMessage || cached.timestamp >= item.lastMessage.timestamp)
-          ? { ...item, lastMessage: cached } : item;
+        return {
+          ...item,
+          activityAt: Math.max(item.activityAt || 0, cached?.timestamp || 0,
+            item.lastMessage?.timestamp || 0),
+          lastMessage: cached && (!item.lastMessage || cached.timestamp >= item.lastMessage.timestamp)
+            ? cached : item.lastMessage,
+        };
       });
       const previews = chats.filter((item) => item.lastMessage && item.lastMessage.body).length;
       void preparePreviews(rawChats).catch(() => {});

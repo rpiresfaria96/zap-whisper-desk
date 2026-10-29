@@ -160,6 +160,17 @@ function Url-Ready([string]$url) {
         $request.Timeout = 1200
         $request.ReadWriteTimeout = 1200
         $request.Proxy = $null
+        if ($url.StartsWith('https://')) {
+            # Checagem restrita a ESTE certificado, sem desativar validacao TLS global.
+            # A confianca do navegador e instalada separadamente pelo usuario.
+            $public = Join-Path $script:Root '.local\https\IdealZap_CERTIFICADO_PUBLICO.cer'
+            $trustedCert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($public)
+            $expectedThumb = $trustedCert.Thumbprint
+            $request.ServerCertificateValidationCallback = {
+                param($sender, $serverCert, $chain, $errors)
+                return ($null -ne $serverCert -and $serverCert.GetCertHashString() -eq $expectedThumb)
+            }.GetNewClosure()
+        }
         $response = $request.GetResponse()
         try { return ([int]$response.StatusCode -eq 200) }
         finally { $response.Close() }
@@ -204,7 +215,7 @@ function Kill-ProcessTree($p) {
 function Stop-Children {
     Kill-ProcessTree $script:SetupProcess
     $script:SetupProcess = $null
-    foreach ($key in @('ui','api','wpp')) {
+    foreach ($key in @('https','ui','api','wpp')) {
         $p = $script:Running[$key]
         if ($p) { Kill-ProcessTree $p }
     }
@@ -241,11 +252,31 @@ function Start-Services {
             return
         }
     }
-    foreach ($port in @(8788,3001,8080)) {
+    foreach ($port in @(8788,3001,8080,8081)) {
         if (Port-Used $port) {
             Fail-Startup ('Porta ' + $port + ' ocupada. Feche as janelas antigas CMD e tente outra vez.')
             return
         }
+    }
+    if (-not (Read-LanUrl)) {
+        Fail-Startup 'Este servidor precisa ter o IP 192.168.100.88. Verifique ipconfig e o certificado HTTPS.'
+        return
+    }
+    # O site inteiro usa HTTPS na porta 8080 (sem fallback HTTP na mesma porta).
+    $tlsFolder = Join-Path $script:Root '.local\https'
+    $hasPfx = (Test-Path -LiteralPath (Join-Path $tlsFolder 'idealzap-lan.pfx')) -and
+        (Test-Path -LiteralPath (Join-Path $tlsFolder 'pfx.pass')) -and
+        (Test-Path -LiteralPath (Join-Path $tlsFolder 'IdealZap_CERTIFICADO_PUBLICO.cer'))
+    $hasPem = (Test-Path -LiteralPath (Join-Path $tlsFolder 'key.pem')) -and
+        (Test-Path -LiteralPath (Join-Path $tlsFolder 'cert.pem')) -and
+        (Test-Path -LiteralPath (Join-Path $tlsFolder 'IdealZap_CERTIFICADO_PUBLICO.cer'))
+    if (-not ($hasPfx -or $hasPem)) {
+        Fail-Startup 'HTTPS: falta certificado valido. Execute CRIAR_CERTIFICADO_8080.bat em Atualizacoes.'
+        return
+    }
+    if (-not (Test-Path -LiteralPath (Join-Path $script:Root 'scripts\https-lan-gateway.mjs'))) {
+        Fail-Startup 'HTTPS: falta scripts\https-lan-gateway.mjs. Reaplique a atualizacao.'
+        return
     }
     # Recriar apenas o arquivo de diagnostico, como no iniciador original.
     $header = '=== IDEAL ZAP - DIAGNOSTICO AUTOMATICO ===' + [Environment]::NewLine +
@@ -279,7 +310,7 @@ function Restart-Services {
 
 function Open-WhatsApp {
     if ($script:Phase -eq 'pronto') {
-        Start-Process 'http://127.0.0.1:8080/' | Out-Null
+        Start-Process 'https://127.0.0.1:8080/' | Out-Null
     }
 }
 
@@ -291,19 +322,16 @@ function Restore-Window {
 
 function Read-LanUrl {
     try {
-        $configs = @(Get-NetIPConfiguration -ErrorAction Stop | Where-Object { $_.IPv4DefaultGateway -and $_.IPv4Address })
-        foreach ($config in $configs) {
-            $ip = [string]$config.IPv4Address[0].IPAddress
-            if ($ip -match '^([0-9]{1,3}\.){3}[0-9]{1,3}$') {
-                return 'http://' + $ip + ':8080/'
-            }
-        }
+        $serverIp = Get-NetIPAddress -IPAddress '192.168.100.88' -AddressFamily IPv4 -ErrorAction SilentlyContinue
+        if ($serverIp) { return 'https://192.168.100.88:8080/' }
     } catch { }
     return ''
 }
 
 $script:LanUrl = Read-LanUrl
-if ($script:LanUrl) { $link.Text = 'Outro computador: ' + $script:LanUrl + '  (clique para copiar)' }
+if ($script:LanUrl) {
+    $link.Text = 'Outro computador: ' + $script:LanUrl + '  (clique para copiar)'
+}
 $link.Add_LinkClicked({
     if ($script:LanUrl) {
         [System.Windows.Forms.Clipboard]::SetText($script:LanUrl)
@@ -342,24 +370,32 @@ function Tick-Status {
         } elseif ($script:Phase -eq 'api') {
             if (Url-Ready 'http://127.0.0.1:3001/health') {
                 Write-Panel 'API pronta. Iniciando interface em segundo plano...'
-                $script:Running['ui'] = Run-HiddenNode (Join-Path $script:Root 'node_modules\vite\bin\vite.js') 'dev --host 0.0.0.0 --port 8080'
-                Set-Phase 'interface' 'Aguardando interface na porta 8080...'
+                $script:Running['ui'] = Run-HiddenNode (Join-Path $script:Root 'node_modules\vite\bin\vite.js') 'dev --host 127.0.0.1 --port 8081 --strictPort'
+                Set-Phase 'interface' 'Aguardando interface interna (127.0.0.1:8081)...'
             } elseif ($script:Running['api'].HasExited -or $elapsed -gt 60) {
                 Fail-Startup 'API nao iniciou ou parou.'
             }
         } elseif ($script:Phase -eq 'interface') {
-            if (Url-Ready 'http://127.0.0.1:8080/') {
-                Write-Panel 'Ideal-Zap iniciado com sucesso.'
-                Set-Phase 'pronto' 'ATIVO - WhatsApp disponivel em http://127.0.0.1:8080/'
+            if (Url-Ready 'http://127.0.0.1:8081/') {
+                Write-Panel 'Interface interna pronta. Iniciando HTTPS na porta 8080...'
+                $script:Running['https'] = Run-HiddenNode (Join-Path $script:Root 'scripts\https-lan-gateway.mjs') ''
+                Set-Phase 'https' 'Aguardando acesso HTTPS (porta 8080)...'
+            } elseif ($script:Running['ui'].HasExited -or $elapsed -gt 125) {
+                Fail-Startup 'Interface interna nao iniciou; consulte o diagnostico.'
+            }
+        } elseif ($script:Phase -eq 'https') {
+            if (Url-Ready 'https://127.0.0.1:8080/') {
+                Set-Phase 'pronto' 'ATIVO - HTTPS seguro na porta 8080.'
+                Write-Panel 'Ideal-Zap pronto em HTTPS:8080. HTTP antigo foi substituido.'
                 if (-not $script:Opened) {
                     $script:Opened = $true
                     Open-WhatsApp
                 }
-            } elseif ($script:Running['ui'].HasExited -or $elapsed -gt 125) {
-                Fail-Startup 'Interface nao iniciou ou retornou erro.'
+            } elseif ($script:Running['https'].HasExited -or $elapsed -gt 45) {
+                Fail-Startup 'HTTPS nao iniciou na porta 8080. Verifique certificado e porta livre.'
             }
         } elseif ($script:Phase -eq 'pronto') {
-            foreach ($key in @('wpp','api','ui')) {
+            foreach ($key in @('wpp','api','ui','https')) {
                 $proc = $script:Running[$key]
                 if ($proc -and $proc.HasExited) {
                     Fail-Startup ('Servico ' + $key + ' encerrou inesperadamente.')
