@@ -1,14 +1,13 @@
-<!-- LOVABLE:BEGIN -->
-> [!IMPORTANT]
-> This project is connected to [Lovable](https://lovable.dev). Avoid rewriting
-> published git history — force pushing, or rebasing/amending/squashing commits
-> that are already pushed — as it rewrites history on Lovable's side and the
-> user will likely lose their project history.
->
-> Commits you push to the connected branch sync back to Lovable and show up in
-> the editor, so keep the branch in a working state.
-<!-- LOVABLE:END -->
+# Ideal-Zap — manutenção do código
 
-## Architecture
-- UI reads/writes chats only through `ChatService` (src/lib/chat); mock by default, HTTP+SSE to a local Node backend when VITE_API_URL is set — keeps WPPConnect tokens server-side and UI unchanged.
-- No Supabase/cloud: the app must run fully locally.
+Este repositório contém a interface WhatsApp, o adaptador Node e o código-fonte do WPPConnect Server que acompanha a instalação local.
+
+- Faça alterações pequenas, testáveis e preserve o funcionamento atual da sessão.
+- Não faça modificações ou commits em `.env`, `tokens`, `userDataDir`, logs, bancos locais, caches, `node_modules` ou `runtime`.
+- Nunca remova tokens ou dados de sessão para resolver erros de inicialização.
+- Não envie mensagens reais automaticamente durante testes.
+- Use `INICIAR_DISCRETO.vbs` para iniciar os serviços sem janelas CMD; `INICIAR.bat` é o iniciador antigo e permanece apenas para compatibilidade.
+- O serviço WhatsApp usa WPPConnect-Server v2.10.61, API local em 3001 e interface em 8080.
+- Não implemente assinatura automática nas mensagens: esse recurso foi removido a pedido do usuário.
+- O projeto não contém dados pessoais de sessão.
+- Não configure publicação automática para remotos ou GitHub Actions em cada alteração.

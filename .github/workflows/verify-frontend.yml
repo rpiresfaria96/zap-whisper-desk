@@ -1,0 +1,52 @@
+name: Verificar interface Ideal-Zap
+
+# Execução apenas manual. Nenhum workflow automático ao fazer push.
+on:
+  workflow_dispatch:
+
+jobs:
+  frontend:
+    name: Compilar interface e executar testes
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Obter codigo
+        uses: actions/checkout@v4
+      - name: Instalar Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Instalar dependencias
+        run: bun install --frozen-lockfile
+      - name: Conferir TS / TSX
+        run: bunx tsc --noEmit -p tsconfig.json
+      - name: Verificar sintaxe da API local e iniciador
+        run: |
+          node --check backend/media-utils.mjs
+          node --test backend/media-utils.test.mjs backend/contact-identity.test.mjs backend/incoming-events.test.mjs backend/phone-actions.test.mjs backend/session-controls.test.mjs
+          node --check backend/contact-identity.mjs
+          node --check backend/server.mjs
+          node --check backend/diagnostics.mjs
+          node --check scripts/executar-wppconnect.mjs
+      - name: Executar testes
+        run: bun run test
+      - name: Compilar SSR e frontend
+        run: bun run build
+      - name: Verificar que a pagina inicial realmente abre
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun run dev -- --host 127.0.0.1 --port 8080 > /tmp/ideal-zap-ui-smoke.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for i in $(seq 1 40); do
+            status=$(curl --max-time 5 -sS -o /tmp/ideal-zap-index.html -w '%{http_code}' http://127.0.0.1:8080/ 2>/dev/null || true)
+            if [ "$status" = "200" ] && grep -qi "Ideal Zap" /tmp/ideal-zap-index.html; then
+              echo "Interface SSR abriu com HTTP 200"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "SSR nao abriu corretamente. Saida sanitizada de execucao de teste:"
+          tail -n 80 /tmp/ideal-zap-ui-smoke.log
+          exit 1

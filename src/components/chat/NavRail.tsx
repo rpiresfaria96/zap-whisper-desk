@@ -1,12 +1,14 @@
-import { MessageCircle, Users, Star, Settings, Moon, Sun } from "lucide-react";
+import { MessageCircle, Users, Star, Settings, Moon, Sun, Archive } from "lucide-react";
 import { IconButton } from "./IconButton";
 
-export type NavSection = "chats" | "contacts" | "favorites" | "settings";
+export type NavSection = "chats" | "contacts" | "groups" | "favorites" | "archived" | "settings";
 
 const items: { id: NavSection; label: string; icon: typeof MessageCircle }[] = [
   { id: "chats", label: "Conversas", icon: MessageCircle },
   { id: "contacts", label: "Contatos", icon: Users },
+  { id: "groups", label: "Grupos", icon: Users },
   { id: "favorites", label: "Favoritos", icon: Star },
+  { id: "archived", label: "Arquivadas", icon: Archive },
 ];
 
 interface Props {

@@ -1,21 +1,34 @@
-# Adaptador local do Ideal Zap para WPPConnect Server
+# API local do Ideal Zap
 
-O adaptador mantém o token do WPPConnect fora do navegador e escuta apenas em `127.0.0.1:3001`.
+O backend Node.js faz a ponte entre a interface e o WPPConnect Server sem enviar o token secreto ao navegador.
 
-A configuração é feita em `backend/.env`:
-- `WPP_BASE_URL=http://127.0.0.1:8787`
-- `WPP_SESSION=Ideal`
-- `WPP_TOKEN=` valor `token` (hash) retornado por `POST /api/:session/:secretkey/generate-token`; não use `full`, porque o adaptador envia o token como `Authorization: Bearer <token>` e já informa a sessão na URL.
+## Inicialização
 
-O token é específico da sessão. Depois de gerar uma `SECRET_KEY` nova ou instalar um servidor limpo, gere/consulte um token válido para a sessão recém-vinculada. Nunca compartilhe esse token nem coloque-o em variáveis `VITE_*`.
+Não há mais lançador separado para a API. Execute na raiz:
 
-## Rotas locais
+1. `PREPARAR_AMBIENTE.bat` na primeira instalação;
+2. `INICIAR.bat` nas utilizações seguintes.
 
-- `GET /health`: estado da configuração (sem revelar segredos).
-- `GET /status`: estado da sessão.
-- `GET /chats`: conversas.
+O inicializador gera/atualiza o token da sessão automaticamente em `backend/.env` **antes** de abrir a API. Não é necessário copiar o token nem reiniciar a API manualmente.
+
+## Configuração local (somente para diagnóstico)
+
+- `WPP_BASE_URL=http://127.0.0.1:8788`
+- `WPP_SESSION=Ideal Contabilidade`
+- `WPP_TOKEN=` gerado pelo `scripts/configurar-sessao.ps1`
+- `API_PORT=3001`
+
+Guarde `backend/.env` apenas no computador; ele é ignorado pelo Git.
+
+## Rotas
+
+- `GET /health`: saúde e configuração (sem credenciais).
+- `GET /connection`: status e QR Code de conexão, quando disponível.
+- `POST /connection/start`: solicita início da sessão.
+- `GET /status`: informações do estado da sessão (uso local).
+- `GET /chats`: lista de conversas.
 - `GET /chats/:id/messages`: últimas mensagens.
-- `POST /chats/:id/messages`: envia texto.
-- `GET /events`: fluxo de novas mensagens (SSE).
+- `POST /chats/:id/messages`: envio de texto.
+- `GET /events`: atualizações via SSE.
 
-A integração deve ser validada com a versão e sessão reais antes de uso diário. Recursos além da leitura de conversas, histórico e mensagens de texto ainda podem exigir adaptação específica.
+O backend escuta somente em `127.0.0.1` e restringe origens de navegador. O fluxo ainda precisa ser validado em Windows com uma sessão de WhatsApp real antes de uso diário.

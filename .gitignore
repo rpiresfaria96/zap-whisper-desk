@@ -1,4 +1,5 @@
 # Logs
+/LOG_DIAGNOSTICO.txt
 logs
 *.log
 npm-debug.log*
@@ -21,6 +22,7 @@ dist-ssr
 .env.*
 !/.env.example
 !/backend/.env.example
+!/wppconnect-server/.env.example
 
 # Wrangler / Cloudflare
 .wrangler/
@@ -38,7 +40,33 @@ dist-ssr
 *.sw?
 
 # Locally downloaded WPPConnect server and project-local Node runtime
-/wppconnect-server/
 /wppconnect-server.backup-*/
 /runtime/
 /_cache/
+
+# WPPConnect source is included; runtime, dependency and WhatsApp session
+# state MUST NEVER be committed to a repository.
+/wppconnect-server/node_modules/
+/wppconnect-server/dist/
+/wppconnect-server/log/
+/wppconnect-server/logs/
+/wppconnect-server/tokens/
+/wppconnect-server/wppconnect_tokens/
+/wppconnect-server/userDataDir/
+/wppconnect-server/backupFolder/
+/wppconnect-server/uploads/
+/wppconnect-server/.yarn/
+/wppconnect-server/.env
+/wppconnect-server/.env.*
+!/wppconnect-server/.env.example
+/LOG_DIAGNOSTICO*.txt
+/IdealZap_Tray.*.bak
+*.zip
+*.rar
+*.7z
+*.pem
+*.key
+*.pfx
+*.p12
+*.sqlite*
+*.db

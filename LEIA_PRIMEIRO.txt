@@ -1,0 +1,31 @@
+IDEAL-ZAP - CENTRAL DE CONTROLE SEM JANELAS CMD
+
+Este pacote NAO substitui INICIAR.bat e NAO altera nenhuma sessao.
+
+1. Feche as janelas CMD antigas (Ideal Zap - WPPConnect 8788,
+   Ideal Zap - API 3001, Ideal Zap - Interface 8080).
+2. Extraia estes 3 arquivos DIRETAMENTE para a pasta do Ideal-Zap,
+   ao lado de INICIAR.bat, PREPARAR_AMBIENTE.bat, backend/ e scripts/.
+3. Abra INICIAR_DISCRETO.vbs com dois cliques.
+4. A janela "Ideal-Zap - Central de Controle" abre e inicia os servicos.
+   As janelas CMD antigas deixam de ser necessarias.
+5. Quando todos os servicos estiverem ativos, use os botoes:
+   Iniciar (quando parado), Reiniciar, Encerrar, Abrir Zap.
+6. Minimize a janela ou clique no X: ela desaparecera para a area ao
+   lado do relogio do Windows. Se nao aparecer, clique na seta ^ do relogio.
+   Clique DUAS VEZES no icone verde para mostrar de novo.
+7. Botao direito no icone -> "Sair do programa" fecha tambem os servicos.
+   Encerrar NAO apaga tokens, .env nem desfaz a conexao WhatsApp.
+
+IMPORTANTE: nao abra o INICIAR.bat antigo ao mesmo tempo que esta
+central. Se uma porta estiver ocupada, o painel informa e nao mata
+servicos que nao iniciou.
+
+Mantemos o inicio automatico. Se quiser que o painel ESPERE um clique
+no botao Iniciar, abra Central_IdealZap.ps1 no bloco de notas e apague
+somente esta linha perto do final:
+    $script:Form.Add_Shown({ Start-Services })
+
+Se der erro, envie o LOG_DIAGNOSTICO.txt (na pasta do programa).
+Este pacote foi escrito para PowerShell 5.1 do Windows 10.
+Os testes com a sessao real precisam ser feitos no seu computador.
